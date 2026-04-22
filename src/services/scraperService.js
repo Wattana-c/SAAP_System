@@ -15,10 +15,13 @@ class ScraperService {
             throw new AppError('Invalid URL provided', 400);
         }
 
-        let retries = 3;
-        while (retries > 0) {
+        const maxRetries = 3;
+        let attempt = 0;
+
+        while (attempt < maxRetries) {
+            attempt++;
             try {
-                // Using basic headers for anti-bot
+                console.log(\`[Scraper] Attempt \${attempt}: Scraping \${affiliateUrl}\`);
                 const response = await axios.get(affiliateUrl, {
                     headers: {
                         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
@@ -27,44 +30,50 @@ class ScraperService {
                         'Connection': 'keep-alive',
                         'Upgrade-Insecure-Requests': '1'
                     },
-                    timeout: 10000 // 10s timeout
+                    timeout: 10000 // 10s timeout to prevent hanging requests
                 });
 
                 const $ = cheerio.load(response.data);
 
-                // Shopee renders content via JS, so traditional DOM scraping might be tricky depending on the exact page structure.
-                // We'll look for common meta tags or structural elements as a best-effort approach.
-                // In a real-world scenario, you might need a headless browser (Puppeteer) or to parse the inline script tags.
-
                 let title = $('meta[property="og:title"]').attr('content') || $('title').text();
                 let imageUrl = $('meta[property="og:image"]').attr('content') || '';
+                let rawPrice = $('meta[property="product:price:amount"]').attr('content') || '0';
 
-                // Price is usually heavily obfuscated/dynamically rendered. This is a placeholder for where price logic would go.
-                // We might try to find a meta tag or a specific class if it exists in the static HTML.
-                let price = $('meta[property="product:price:amount"]').attr('content') || '0.00';
-
-                // Clean up title
-                title = title ? title.replace(/\|.*/, '').trim() : 'Unknown Title';
+                title = title ? title.replace(/\\|.*/, '').trim() : '';
+                const numericPriceMatch = rawPrice.match(/[\d,.]+/);
+                let price = numericPriceMatch ? numericPriceMatch[0].replace(/,/g, '') : '0';
+                price = parseFloat(price);
 
                 if (!title) {
-                    throw new Error('Failed to parse title from page');
+                    throw new AppError('Scraped product title is null or empty', 422);
+                }
+                if (!imageUrl) {
+                    throw new AppError('Scraped product image URL is null or empty', 422);
+                }
+                if (isNaN(price) || price <= 0) {
+                    throw new AppError(\`Scraped product price is invalid: \${rawPrice}\`, 422);
                 }
 
+                console.log(\`[Scraper] Success: Scraped "\${title}"\`);
                 return {
                     title,
-                    price: parseFloat(price) || 0,
+                    price,
                     image_url: imageUrl,
                     affiliate_url: affiliateUrl
                 };
 
             } catch (error) {
-                retries--;
-                console.log(`Scrape attempt failed. Retries left: ${retries}. Error: ${error.message}`);
-                if (retries === 0) {
-                    throw new AppError(`Scraping failed after 3 attempts: ${error.message}`, 500);
+                console.error(\`[Scraper] Attempt \${attempt} failed: \${error.message}\`);
+                if (error instanceof AppError && error.statusCode === 422) {
+                    throw error;
                 }
-                // Wait for a short time before retrying
-                await new Promise(res => setTimeout(res, 1000));
+
+                if (attempt === maxRetries) {
+                    throw new AppError(\`Scraping failed after \${maxRetries} attempts: \${error.message}\`, 500);
+                }
+                const delay = Math.pow(2, attempt) * 1000;
+                console.log(\`[Scraper] Waiting \${delay}ms before next attempt...\`);
+                await new Promise(res => setTimeout(res, delay));
             }
         }
     }

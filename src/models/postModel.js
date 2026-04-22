@@ -8,7 +8,7 @@ class PostModel {
             const result = await pool.request().query('SELECT * FROM posts');
             return result.recordset;
         } catch (error) {
-            throw new AppError(`Database Error: ${error.message}`, 500);
+            throw new AppError(\`Database Error: \${error.message}\`, 500);
         }
     }
 }

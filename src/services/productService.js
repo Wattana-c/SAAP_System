@@ -12,6 +12,12 @@ class ProductService {
             throw new AppError('URL is required', 400);
         }
 
+        // Check if product already exists to prevent duplicates
+        const existingProduct = await productModel.findByUrl(url);
+        if (existingProduct) {
+            throw new AppError('Product with this URL already exists', 409);
+        }
+
         // 1. Scrape data
         const scrapedData = await scraperService.scrapeShopee(url);
 
