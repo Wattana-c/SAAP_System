@@ -4,7 +4,7 @@
   "description": "Shopee Affiliate Auto Post System",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "jest"
   },
   "repository": {
     "type": "git",
@@ -28,5 +28,9 @@
     "helmet": "^8.1.0",
     "morgan": "^1.10.1",
     "mssql": "^12.3.1"
+  },
+  "devDependencies": {
+    "axios-mock-adapter": "^2.1.0",
+    "jest": "^30.3.0"
   }
 }

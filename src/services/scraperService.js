@@ -21,7 +21,7 @@ class ScraperService {
         while (attempt < maxRetries) {
             attempt++;
             try {
-                console.log(\`[Scraper] Attempt \${attempt}: Scraping \${affiliateUrl}\`);
+                console.log(`[Scraper] Attempt ${attempt}: Scraping ${affiliateUrl}`);
                 const response = await axios.get(affiliateUrl, {
                     headers: {
                         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
@@ -39,7 +39,7 @@ class ScraperService {
                 let imageUrl = $('meta[property="og:image"]').attr('content') || '';
                 let rawPrice = $('meta[property="product:price:amount"]').attr('content') || '0';
 
-                title = title ? title.replace(/\\|.*/, '').trim() : '';
+                title = title ? title.replace(/\|.*/, '').trim() : '';
                 const numericPriceMatch = rawPrice.match(/[\d,.]+/);
                 let price = numericPriceMatch ? numericPriceMatch[0].replace(/,/g, '') : '0';
                 price = parseFloat(price);
@@ -51,10 +51,10 @@ class ScraperService {
                     throw new AppError('Scraped product image URL is null or empty', 422);
                 }
                 if (isNaN(price) || price <= 0) {
-                    throw new AppError(\`Scraped product price is invalid: \${rawPrice}\`, 422);
+                    throw new AppError(`Scraped product price is invalid: ${rawPrice}`, 422);
                 }
 
-                console.log(\`[Scraper] Success: Scraped "\${title}"\`);
+                console.log(`[Scraper] Success: Scraped "${title}"`);
                 return {
                     title,
                     price,
@@ -63,16 +63,16 @@ class ScraperService {
                 };
 
             } catch (error) {
-                console.error(\`[Scraper] Attempt \${attempt} failed: \${error.message}\`);
+                console.error(`[Scraper] Attempt ${attempt} failed: ${error.message}`);
                 if (error instanceof AppError && error.statusCode === 422) {
                     throw error;
                 }
 
                 if (attempt === maxRetries) {
-                    throw new AppError(\`Scraping failed after \${maxRetries} attempts: \${error.message}\`, 500);
+                    throw new AppError(`Scraping failed after ${maxRetries} attempts: ${error.message}`, 500);
                 }
                 const delay = Math.pow(2, attempt) * 1000;
-                console.log(\`[Scraper] Waiting \${delay}ms before next attempt...\`);
+                console.log(`[Scraper] Waiting ${delay}ms before next attempt...`);
                 await new Promise(res => setTimeout(res, delay));
             }
         }
