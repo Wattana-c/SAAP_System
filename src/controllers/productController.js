@@ -17,12 +17,11 @@ class ProductController {
         try {
             const { url } = req.body;
 
-            const newProduct = await productService.createProduct(url);
+            await productService.enqueueCreateProduct(url);
 
-            res.status(201).json({
+            res.status(202).json({
                 success: true,
-                message: 'Product scraped and saved successfully',
-                data: newProduct
+                message: 'Product creation job queued successfully'
             });
         } catch (error) {
             next(error);
