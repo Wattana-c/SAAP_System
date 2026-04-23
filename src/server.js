@@ -12,7 +12,7 @@ async function startServer() {
         await initializeDatabase();
 
         server = app.listen(PORT, () => {
-            console.log(\`Server is running on port \${PORT} in \${process.env.NODE_ENV} mode\`);
+            console.log(`Server is running on port ${PORT} in ${process.env.NODE_ENV} mode`);
         });
     } catch (err) {
         console.error('Failed to start server:', err);
@@ -23,7 +23,7 @@ startServer();
 
 // Graceful shutdown mechanism
 async function gracefulShutdown(signal) {
-    console.log(\`\n\${signal} signal received: closing HTTP server\`);
+    console.log(`\n${signal} signal received: closing HTTP server`);
     if (server) {
         server.close(async () => {
             console.log('HTTP server closed');

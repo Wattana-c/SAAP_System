@@ -14,11 +14,25 @@ async function initializeDatabase() {
                 CREATE TABLE products (
                     id INT IDENTITY(1,1) PRIMARY KEY,
                     title NVARCHAR(255) NOT NULL,
-                    price DECIMAL(10, 2) NOT NULL,
+                    min_price DECIMAL(10, 2) NOT NULL,
+                    max_price DECIMAL(10, 2) NOT NULL,
                     image_url NVARCHAR(MAX),
                     affiliate_url NVARCHAR(MAX) NOT NULL,
                     created_at DATETIME DEFAULT GETDATE()
                 )
+            END
+            ELSE
+            BEGIN
+                -- Add min_price and max_price if they do not exist
+                IF COL_LENGTH('products', 'min_price') IS NULL
+                BEGIN
+                    ALTER TABLE products ADD min_price DECIMAL(10, 2) DEFAULT 0 NOT NULL;
+                END
+
+                IF COL_LENGTH('products', 'max_price') IS NULL
+                BEGIN
+                    ALTER TABLE products ADD max_price DECIMAL(10, 2) DEFAULT 0 NOT NULL;
+                END
             END;
 
             IF OBJECT_ID('posts', 'U') IS NULL

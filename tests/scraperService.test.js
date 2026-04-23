@@ -51,9 +51,37 @@ describe('ScraperService', () => {
 
         expect(result).toEqual({
             title: 'Test Product',
-            price: 1500.5,
+            min_price: 1500.5,
+            max_price: 1500.5,
             image_url: 'http://example.com/image.jpg',
             affiliate_url: validUrl
+        });
+    });
+
+    it('should successfully parse price ranges', async () => {
+        const mockHtml = `
+            <html>
+                <head>
+                    <meta property="og:title" content="Range Product | Shopee Thailand">
+                    <meta property="og:image" content="http://example.com/image2.jpg">
+                    <meta property="product:price:amount" content="฿ 100.00 - ฿ 200.00">
+                </head>
+            </html>
+        `;
+
+        const url = 'https://shopee.co.th/product-range?sp_atk=123';
+        const expectedNormalizedUrl = 'https://shopee.co.th/product-range';
+
+        mock.onGet(expectedNormalizedUrl).reply(200, mockHtml);
+
+        const result = await scraperService.scrapeShopee(url);
+
+        expect(result).toEqual({
+            title: 'Range Product',
+            min_price: 100.0,
+            max_price: 200.0,
+            image_url: 'http://example.com/image2.jpg',
+            affiliate_url: expectedNormalizedUrl
         });
     });
 

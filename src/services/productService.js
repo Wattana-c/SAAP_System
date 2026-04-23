@@ -1,5 +1,5 @@
 const productModel = require('../models/productModel');
-const scraperService = require('./scraperService');
+const queueService = require('./queueService');
 const AppError = require('../utils/AppError');
 
 class ProductService {
@@ -7,24 +7,32 @@ class ProductService {
         return await productModel.findAll();
     }
 
-    async createProduct(url) {
+    async enqueueCreateProduct(url) {
         if (!url) {
             throw new AppError('URL is required', 400);
         }
 
+        // Normalize URL for duplicate checking
+        let normalizedUrl;
+        try {
+            const parsedUrl = new URL(url);
+            if (!parsedUrl.hostname.includes('shopee')) {
+                throw new AppError('Invalid URL: Not a Shopee link', 400);
+            }
+            normalizedUrl = `${parsedUrl.origin}${parsedUrl.pathname}`;
+        } catch (error) {
+            if (error instanceof AppError) throw error;
+            throw new AppError('Invalid URL provided', 400);
+        }
+
         // Check if product already exists to prevent duplicates
-        const existingProduct = await productModel.findByUrl(url);
+        const existingProduct = await productModel.findByUrl(normalizedUrl);
         if (existingProduct) {
             throw new AppError('Product with this URL already exists', 409);
         }
 
-        // 1. Scrape data
-        const scrapedData = await scraperService.scrapeShopee(url);
-
-        // 2. Save to DB
-        const newProduct = await productModel.create(scrapedData);
-
-        return newProduct;
+        // Push the background job
+        queueService.enqueueCreateProduct(normalizedUrl);
     }
 }
 

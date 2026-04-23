@@ -8,7 +8,7 @@ class ScheduleModel {
             const result = await pool.request().query('SELECT * FROM schedules');
             return result.recordset;
         } catch (error) {
-            throw new AppError(\`Database Error: \${error.message}\`, 500);
+            throw new AppError(`Database Error: ${error.message}`, 500);
         }
     }
 }
