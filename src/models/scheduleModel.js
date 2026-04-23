@@ -1,4 +1,5 @@
 const { poolPromise } = require('../configs/db');
+const AppError = require('../utils/AppError');
 
 class ScheduleModel {
     async findAll() {
@@ -7,7 +8,7 @@ class ScheduleModel {
             const result = await pool.request().query('SELECT * FROM schedules');
             return result.recordset;
         } catch (error) {
-            throw new Error(`Error fetching schedules: ${error.message}`);
+            throw new AppError(\`Database Error: \${error.message}\`, 500);
         }
     }
 }
