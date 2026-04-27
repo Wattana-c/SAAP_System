@@ -35,13 +35,34 @@ class CaptionService {
         const hook = hooks[Math.floor(Math.random() * hooks.length)];
         const urgency = urgencies[Math.floor(Math.random() * urgencies.length)];
 
+        // Detect category based on title keywords for personalization
+        let painPoint = "เคยไหม? ซื้อของมาแล้วไม่ตรงปก ใช้ไม่ทน เสียความรู้สึกสุดๆ 😭";
+        let benefit1 = "✅ ของแท้ 💯 ใช้งานดีจริง ตรงปกไม่จกตา";
+        let benefit2 = "✅ ตอนนี้กำลังฮิตสุดๆ ไม่มีไม่ได้แล้ว!";
+
+        const titleLower = title.toLowerCase();
+        if (titleLower.includes('หูฟัง') || titleLower.includes('earphone') || titleLower.includes('headphone')) {
+            painPoint = "ใครมีปัญหาหูฟังเสียงเบา ไมค์ช็อต แบตหมดไว... ฟังทางนี้เลย! 🎧";
+            benefit1 = "✅ เสียงเบสแน่นตึ้บ ฟังเพลงฟิน เล่นเกมแยกเสียงชัดเจน!";
+            benefit2 = "✅ ใส่สบาย ไม่เจ็บหู แถมแบตอึดใช้ได้ยาวๆ";
+        } else if (titleLower.includes('รองเท้า') || titleLower.includes('shoe') || titleLower.includes('sneaker')) {
+            painPoint = "ปัญหารองเท้ากัด เดินแล้วปวดเท้า... จบลงที่คู่นี้เลยค่ะ 👟";
+            benefit1 = "✅ ทรงสวยเป๊ะ แมทช์ได้ทุกลุค ใส่ทำงานก็ดี เที่ยวก็ได้";
+            benefit2 = "✅ พื้นนุ่มมมมม ซัพพอร์ตเท้าดีเว่อร์ เดินทั้งวันก็ไม่เมื่อย!";
+        } else if (titleLower.includes('กระเป๋า') || titleLower.includes('bag')) {
+            painPoint = "กระเป๋าใบเก่าจุของไม่พอ หาของก็ยาก... ต้องจัดใบนี้แล้วป่ะ? 👜";
+            benefit1 = "✅ ช่องเก็บของเยอะมากก จัดระเบียบง่าย หาของเจอใน 1 วิ";
+            benefit2 = "✅ ดีไซน์ลูกคุณ วัสดุพรีเมียม ถือแล้วดูแพงสุดๆ";
+        }
+
         // Construct the structured caption (UGC Style)
         const caption = `
 ${hook}
 
+${painPoint}
 เพื่อนๆ คะ... ขออนุญาตมาป้ายยา 📦 **${title}** ตัวนี้คือตอบโจทย์มากกกก!
-✅ ของแท้ 💯 ใช้งานดีจริง ตรงปกไม่จกตา
-✅ ตอนนี้กำลังฮิตสุดๆ ไม่มีไม่ได้แล้ว!
+${benefit1}
+${benefit2}
 
 💸 ค่าตัวน้องเบาๆ แค่ **${priceStr} บาท**
 (ราคาดีจนงงว่าร้านได้กำไรจากไหน 🥹)
