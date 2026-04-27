@@ -42,9 +42,18 @@ async function initializeDatabase() {
                     product_id INT NOT NULL,
                     caption NVARCHAR(MAX),
                     status NVARCHAR(50) DEFAULT 'pending',
+                    fb_post_id NVARCHAR(255),
                     created_at DATETIME DEFAULT GETDATE(),
                     FOREIGN KEY (product_id) REFERENCES products(id)
                 )
+            END
+            ELSE
+            BEGIN
+                -- Add fb_post_id if it does not exist
+                IF COL_LENGTH('posts', 'fb_post_id') IS NULL
+                BEGIN
+                    ALTER TABLE posts ADD fb_post_id NVARCHAR(255) NULL;
+                END
             END;
 
             IF OBJECT_ID('schedules', 'U') IS NULL

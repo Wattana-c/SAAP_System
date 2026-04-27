@@ -12,6 +12,22 @@ class PostController {
             next(error);
         }
     }
+
+    async publishPost(req, res, next) {
+        try {
+            const { postId } = req.params;
+
+            const publishedPost = await postService.publishPost(postId);
+
+            res.status(200).json({
+                success: true,
+                message: 'Post published to Facebook successfully',
+                data: publishedPost
+            });
+        } catch (error) {
+            next(error);
+        }
+    }
 }
 
 module.exports = new PostController();
