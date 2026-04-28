@@ -1,6 +1,7 @@
 const scraperService = require('./scraperService');
 const productModel = require('../models/productModel');
 const postService = require('./postService');
+const scheduleService = require('./scheduleService');
 
 class QueueService {
     constructor() {
@@ -33,9 +34,14 @@ class QueueService {
                 const newProduct = await productModel.create(scrapedData);
                 console.log(`[Queue] Product successfully created: ${newProduct.title}`);
 
-                // 3. Generate Caption and Save Draft Post
-                await postService.createPostForProduct(newProduct);
-                console.log(`[Queue] Draft post generated and saved for URL: ${url}`);
+                // 3. Generate A/B Captions and Save Draft Posts
+                const newPosts = await postService.createPostForProduct(newProduct);
+                console.log(`[Queue] Draft posts (A/B/C) generated and saved for URL: ${url}`);
+
+                // 4. Schedule Posts (Full Auto Mode)
+                for (const post of newPosts) {
+                    await scheduleService.schedulePost(post.id);
+                }
             } catch (error) {
                 console.error(`[Queue] Job failed for URL: ${url}. Error: ${error.message}`);
                 // Implement further retry logic or dead-letter queue if necessary

@@ -9,6 +9,17 @@ async function initializeDatabase() {
         // Or we can check if object_id is null.
 
         const query = `
+            IF OBJECT_ID('pages', 'U') IS NULL
+            BEGIN
+                CREATE TABLE pages (
+                    id INT IDENTITY(1,1) PRIMARY KEY,
+                    fb_page_id NVARCHAR(255) NOT NULL,
+                    access_token NVARCHAR(MAX) NOT NULL,
+                    name NVARCHAR(255),
+                    created_at DATETIME DEFAULT GETDATE()
+                )
+            END;
+
             IF OBJECT_ID('products', 'U') IS NULL
             BEGIN
                 CREATE TABLE products (
@@ -18,6 +29,8 @@ async function initializeDatabase() {
                     max_price DECIMAL(10, 2) NOT NULL,
                     image_url NVARCHAR(MAX),
                     affiliate_url NVARCHAR(MAX) NOT NULL,
+                    category NVARCHAR(100),
+                    score DECIMAL(10, 2) DEFAULT 0,
                     created_at DATETIME DEFAULT GETDATE()
                 )
             END
@@ -33,6 +46,16 @@ async function initializeDatabase() {
                 BEGIN
                     ALTER TABLE products ADD max_price DECIMAL(10, 2) DEFAULT 0 NOT NULL;
                 END
+
+                -- Add category and score for smart tracking
+                IF COL_LENGTH('products', 'category') IS NULL
+                BEGIN
+                    ALTER TABLE products ADD category NVARCHAR(100) NULL;
+                END
+                IF COL_LENGTH('products', 'score') IS NULL
+                BEGIN
+                    ALTER TABLE products ADD score DECIMAL(10, 2) DEFAULT 0 NOT NULL;
+                END
             END;
 
             IF OBJECT_ID('posts', 'U') IS NULL
@@ -40,10 +63,53 @@ async function initializeDatabase() {
                 CREATE TABLE posts (
                     id INT IDENTITY(1,1) PRIMARY KEY,
                     product_id INT NOT NULL,
+                    page_id INT,
                     caption NVARCHAR(MAX),
                     status NVARCHAR(50) DEFAULT 'pending',
+                    fb_post_id NVARCHAR(255),
+                    ab_version NVARCHAR(10),
                     created_at DATETIME DEFAULT GETDATE(),
-                    FOREIGN KEY (product_id) REFERENCES products(id)
+                    FOREIGN KEY (product_id) REFERENCES products(id),
+                    FOREIGN KEY (page_id) REFERENCES pages(id)
+                )
+            END
+            ELSE
+            BEGIN
+                -- Add fb_post_id if it does not exist
+                IF COL_LENGTH('posts', 'fb_post_id') IS NULL
+                BEGIN
+                    ALTER TABLE posts ADD fb_post_id NVARCHAR(255) NULL;
+                END
+                -- Add page_id if it does not exist
+                IF COL_LENGTH('posts', 'page_id') IS NULL
+                BEGIN
+                    ALTER TABLE posts ADD page_id INT NULL;
+                    ALTER TABLE posts ADD CONSTRAINT FK_posts_pages FOREIGN KEY (page_id) REFERENCES pages(id);
+                END
+                -- Add ab_version for A/B testing
+                IF COL_LENGTH('posts', 'ab_version') IS NULL
+                BEGIN
+                    ALTER TABLE posts ADD ab_version NVARCHAR(10) NULL;
+                END
+            END;
+
+            IF OBJECT_ID('system_configs', 'U') IS NULL
+            BEGIN
+                CREATE TABLE system_configs (
+                    config_key NVARCHAR(100) PRIMARY KEY,
+                    config_value NVARCHAR(MAX),
+                    updated_at DATETIME DEFAULT GETDATE()
+                )
+            END;
+
+            IF OBJECT_ID('clicks', 'U') IS NULL
+            BEGIN
+                CREATE TABLE clicks (
+                    id INT IDENTITY(1,1) PRIMARY KEY,
+                    post_id INT NOT NULL,
+                    ip_address NVARCHAR(50),
+                    created_at DATETIME DEFAULT GETDATE(),
+                    FOREIGN KEY (post_id) REFERENCES posts(id)
                 )
             END;
 
