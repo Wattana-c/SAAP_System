@@ -43,6 +43,7 @@ Version B: Logical & Benefit-driven - Focus on the pain point solved and quality
 Version C: Short & Direct - Quick, punchy, UGC (User Generated Content) style review.
 
 Requirements for all:
+- Make variations completely distinct from one another to avoid duplication detection by Facebook algorithms.
 - Include appropriate emojis.
 - End with a strong Call-To-Action pointing to the exact string "{{LINK}}". Do not invent a URL, just print "{{LINK}}".
 - Do not use hashtags.

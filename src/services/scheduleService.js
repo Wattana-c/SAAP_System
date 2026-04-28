@@ -5,10 +5,10 @@ class ScheduleService {
         return await scheduleModel.findAll();
     }
 
-    async schedulePost(postId) {
+    async schedulePost(postId, customMinDelay = null, customMaxDelay = null) {
         // Read config or use defaults
-        const minMinutes = parseInt(process.env.MIN_DELAY_MINUTES) || 15;
-        const maxMinutes = parseInt(process.env.MAX_DELAY_MINUTES) || 120;
+        const minMinutes = customMinDelay !== null ? customMinDelay : (parseInt(process.env.MIN_DELAY_MINUTES) || 15);
+        const maxMinutes = customMaxDelay !== null ? customMaxDelay : (parseInt(process.env.MAX_DELAY_MINUTES) || 120);
 
         // Calculate random delay
         const randomDelayMinutes = Math.floor(Math.random() * (maxMinutes - minMinutes + 1)) + minMinutes;

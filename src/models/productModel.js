@@ -45,6 +45,27 @@ class ProductModel {
             throw new AppError(`Database Error creating product: ${error.message}`, 500);
         }
     }
+
+    async getTop10PercentProducts() {
+        try {
+            const pool = await poolPromise;
+            // Uses NTILE to divide products into 10 buckets by score descending.
+            // Selects bucket 1 (Top 10%) where score > 0 to ensure we only get profitable items.
+            const result = await pool.request().query(`
+                WITH RankedProducts AS (
+                    SELECT
+                        *,
+                        NTILE(10) OVER(ORDER BY score DESC) as percentile_rank
+                    FROM products
+                    WHERE score > 0
+                )
+                SELECT * FROM RankedProducts WHERE percentile_rank = 1
+            `);
+            return result.recordset;
+        } catch (error) {
+            throw new AppError(`Database Error fetching top 10% products: ${error.message}`, 500);
+        }
+    }
 }
 
 module.exports = new ProductModel();

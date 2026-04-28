@@ -10,9 +10,9 @@ class PostService {
     }
 
     async createPostForProduct(product) {
-        // 1. Pick a random page (for multi-page support)
-        const randomPage = await pageModel.getRandomPage();
-        const pageId = randomPage ? randomPage.id : null;
+        // 1. Pick least recently used page to intelligently rotate distribution
+        const rotatedPage = await pageModel.getLeastRecentlyUsedPage();
+        const pageId = rotatedPage ? rotatedPage.id : null;
 
         // Fetch dynamic guidelines optimized by AI
         const systemConfigModel = require('../models/systemConfigModel');

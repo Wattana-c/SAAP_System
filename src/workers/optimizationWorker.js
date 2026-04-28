@@ -1,5 +1,6 @@
 const captionOptimizerService = require('../services/captionOptimizerService');
 const productScoringService = require('../services/productScoringService');
+const trafficService = require('../services/trafficService');
 
 class OptimizationWorker {
     constructor() {
@@ -34,6 +35,9 @@ class OptimizationWorker {
 
             // 2. Score Products (Identify profitable items)
             await productScoringService.updateAllScores();
+
+            // 3. Distribution & Traffic Strategy (Repost top 10% winners to rotated pages)
+            await trafficService.processTopProductLoop();
 
             console.log(`[OptimizationWorker] Optimization cycles completed.`);
         } catch (error) {
