@@ -36,6 +36,11 @@ app.use(logger);
 // Routes
 app.use('/api', routes);
 
+// Note: Often redirect links are placed at the root level (e.g. example.com/r/123) for shorter URLs.
+// Adding a root-level redirect mount to support the link format generated in postService:
+const redirectController = require('./controllers/redirectController');
+app.get('/r/:postId', redirectController.handleRedirect);
+
 // Error Handling Middleware
 app.use(errorHandler);
 

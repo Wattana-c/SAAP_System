@@ -17,12 +17,13 @@ class PostModel {
             const pool = await poolPromise;
             const result = await pool.request()
                 .input('product_id', postData.product_id)
-                .input('caption', postData.caption)
+                .input('page_id', postData.page_id || null)
+                .input('caption', postData.caption || '')
                 .input('status', postData.status || 'draft')
                 .query(`
-                    INSERT INTO posts (product_id, caption, status)
+                    INSERT INTO posts (product_id, page_id, caption, status)
                     OUTPUT INSERTED.*
-                    VALUES (@product_id, @caption, @status)
+                    VALUES (@product_id, @page_id, @caption, @status)
                 `);
             return result.recordset[0];
         } catch (error) {
@@ -36,9 +37,11 @@ class PostModel {
             const result = await pool.request()
                 .input('id', id)
                 .query(`
-                    SELECT p.*, pr.image_url, pr.affiliate_url
+                    SELECT p.*, pr.image_url, pr.affiliate_url,
+                           pg.fb_page_id, pg.access_token as page_access_token
                     FROM posts p
                     JOIN products pr ON p.product_id = pr.id
+                    LEFT JOIN pages pg ON p.page_id = pg.id
                     WHERE p.id = @id
                 `);
             return result.recordset[0];
@@ -61,6 +64,10 @@ class PostModel {
             if (updateData.fb_post_id) {
                 updates.push('fb_post_id = @fb_post_id');
                 request.input('fb_post_id', updateData.fb_post_id);
+            }
+            if (updateData.caption) {
+                updates.push('caption = @caption');
+                request.input('caption', updateData.caption);
             }
 
             if (updates.length === 0) return null;

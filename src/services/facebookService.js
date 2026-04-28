@@ -2,15 +2,16 @@ const axios = require('axios');
 const AppError = require('../utils/AppError');
 
 class FacebookService {
-    async postToFacebook(caption, imageUrl) {
-        const pageId = process.env.FB_PAGE_ID;
-        const accessToken = process.env.FB_PAGE_ACCESS_TOKEN;
+    async postToFacebook(caption, imageUrl, pageId, accessToken) {
+        // Fallback to env vars if no page credentials provided (for backwards compatibility/testing)
+        const fbPageId = pageId || process.env.FB_PAGE_ID;
+        const fbAccessToken = accessToken || process.env.FB_PAGE_ACCESS_TOKEN;
 
-        if (!pageId || !accessToken) {
+        if (!fbPageId || !fbAccessToken) {
             throw new AppError('Facebook credentials are not configured', 500);
         }
 
-        const url = `https://graph.facebook.com/v19.0/${pageId}/photos`;
+        const url = `https://graph.facebook.com/v19.0/${fbPageId}/photos`;
 
         let attempts = 0;
         const maxRetries = 1; // Explicit requirement: retry once if fail (total 2 attempts)
@@ -21,7 +22,7 @@ class FacebookService {
                 const response = await axios.post(url, {
                     url: imageUrl,
                     message: caption,
-                    access_token: accessToken
+                    access_token: fbAccessToken
                 });
 
                 return response.data; // Expected { id: 'post_id', post_id: 'page_id_post_id' }

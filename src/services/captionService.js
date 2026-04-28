@@ -1,20 +1,75 @@
+const OpenAI = require('openai');
+
 class CaptionService {
+    constructor() {
+        // Safe initialization if API key is missing (for local dev/sandbox)
+        try {
+            this.openai = new OpenAI({
+                apiKey: process.env.OPENAI_API_KEY || 'dummy_key'
+            });
+        } catch (error) {
+            console.error('Failed to initialize OpenAI:', error);
+            this.openai = null;
+        }
+    }
+
     /**
      * Generates a highly persuasive Thai selling caption.
-     * In a production environment, this could integrate with an LLM like OpenAI.
-     * For now, it uses dynamic templates based on the product details.
+     * Uses OpenAI LLM. Falls back to template if API fails or key is missing.
      *
      * @param {string} title
      * @param {number} minPrice
      * @param {number} maxPrice
-     * @returns {string} The generated Thai caption
+     * @param {string} link The redirect tracking link
+     * @returns {Promise<string>} The generated Thai caption
      */
-    generateCaption(title, minPrice, maxPrice) {
+    async generateCaption(title, minPrice, maxPrice, link) {
         // Format price string gracefully
         let priceStr = `${minPrice}`;
         if (minPrice !== maxPrice) {
             priceStr = `${minPrice} - ${maxPrice}`;
         }
+
+        // Only try LLM if a real key is present
+        if (this.openai && process.env.OPENAI_API_KEY && process.env.OPENAI_API_KEY !== 'dummy_key') {
+            try {
+                const prompt = `Write a highly persuasive Thai social media post for an affiliate product.
+Title: "${title}"
+Price: ${priceStr} THB
+Link: ${link}
+
+Requirements:
+- Identify the product category and explicitly address the target customer's pain point.
+- Give a specific, relatable use case.
+- Use emotional triggers (e.g. FOMO, excitement).
+- Include appropriate emojis.
+- End with a strong Call-To-Action pointing to the Link.
+- Keep it concise, engaging, and in a friendly UGC (User Generated Content) tone.
+- Do not use hashtags.`;
+
+                const completion = await this.openai.chat.completions.create({
+                    messages: [{ role: "user", content: prompt }],
+                    model: "gpt-3.5-turbo",
+                    max_tokens: 250,
+                    temperature: 0.7,
+                });
+
+                if (completion.choices && completion.choices.length > 0) {
+                    return completion.choices[0].message.content.trim();
+                }
+            } catch (error) {
+                console.error('[CaptionService] OpenAI generation failed, using fallback.', error.message);
+            }
+        }
+
+        // Fallback Template (Rule-based UGC logic)
+        return this.generateFallbackCaption(title, priceStr, link);
+    }
+
+    /**
+     * Generates a template-based fallback caption.
+     */
+    generateFallbackCaption(title, priceStr, link) {
 
         // Randomize Hooks to keep it fresh and sound like UGC (User Generated Content)
         const hooks = [
@@ -69,6 +124,7 @@ ${benefit2}
 
 ${urgency}
 🛒 พิกัดจิ้มตรงนี้เลยยยย 👇👇
+${link}
 `;
 
         return caption.trim();
