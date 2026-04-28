@@ -1,9 +1,23 @@
 const productService = require('../services/productService');
+const productScoringService = require('../services/productScoringService');
 
 class ProductController {
     async getProducts(req, res, next) {
         try {
             const products = await productService.getAllProducts();
+            res.status(200).json({
+                success: true,
+                data: products
+            });
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    async getSmartProducts(req, res, next) {
+        try {
+            const limit = parseInt(req.query.limit) || 20;
+            const products = await productScoringService.getSmartProducts(limit);
             res.status(200).json({
                 success: true,
                 data: products

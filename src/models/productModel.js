@@ -33,10 +33,12 @@ class ProductModel {
                 .input('max_price', sql.Decimal(10, 2), productData.max_price)
                 .input('image_url', sql.NVarChar(sql.MAX), productData.image_url)
                 .input('affiliate_url', sql.NVarChar(sql.MAX), productData.affiliate_url)
+                .input('category', sql.NVarChar(100), productData.category || null)
+                .input('score', sql.Decimal(10, 2), productData.score || 0)
                 .query(`
-                    INSERT INTO products (title, min_price, max_price, image_url, affiliate_url)
+                    INSERT INTO products (title, min_price, max_price, image_url, affiliate_url, category, score)
                     OUTPUT INSERTED.*
-                    VALUES (@title, @min_price, @max_price, @image_url, @affiliate_url)
+                    VALUES (@title, @min_price, @max_price, @image_url, @affiliate_url, @category, @score)
                 `);
             return result.recordset[0];
         } catch (error) {

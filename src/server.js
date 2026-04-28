@@ -3,6 +3,7 @@ const app = require('./app');
 const { initializeDatabase } = require('./models/initDb');
 const { poolPromise } = require('./configs/db');
 const scheduleWorker = require('./workers/scheduleWorker');
+const optimizationWorker = require('./workers/optimizationWorker');
 
 const PORT = process.env.PORT || 3000;
 let server;
@@ -18,6 +19,7 @@ async function startServer() {
 
         // Start background workers
         scheduleWorker.start();
+        optimizationWorker.start();
     } catch (err) {
         console.error('Failed to start server:', err);
     }
@@ -29,6 +31,7 @@ startServer();
 async function gracefulShutdown(signal) {
     console.log(`\n${signal} signal received: closing HTTP server`);
     scheduleWorker.stop();
+    optimizationWorker.stop();
 
     if (server) {
         server.close(async () => {

@@ -14,29 +14,43 @@ class PostService {
         const randomPage = await pageModel.getRandomPage();
         const pageId = randomPage ? randomPage.id : null;
 
-        // 2. Create the post record first to get an ID for the redirect link
-        const postData = {
-            product_id: product.id,
-            page_id: pageId,
-            caption: '', // Will be updated
-            status: 'draft'
-        };
-        const newPost = await postModel.create(postData);
+        // Fetch dynamic guidelines optimized by AI
+        const systemConfigModel = require('../models/systemConfigModel');
+        const additionalGuidelines = await systemConfigModel.getConfig('AI_CAPTION_GUIDELINES') || '';
 
-        // 3. Construct redirect link
-        const redirectLink = `${process.env.FRONTEND_URL}/r/${newPost.id}`;
-
-        // 4. Generate highly persuasive caption via AI
-        const caption = await captionService.generateCaption(
+        // 2. Generate highly persuasive captions via AI (3 Variations for A/B Testing with {{LINK}} placeholders)
+        const captions = await captionService.generateCaption(
             product.title,
             product.min_price,
             product.max_price,
-            redirectLink
+            additionalGuidelines
         );
 
-        // 5. Update the post with the generated caption
-        const updatedPost = await postModel.update(newPost.id, { caption: caption });
-        return updatedPost;
+        // Helper function to create a post and inject its unique redirect link
+        const createPostWithLink = async (captionTemplate, abVersion) => {
+            // Create draft to get an ID
+            const draft = await postModel.create({
+                product_id: product.id,
+                page_id: pageId,
+                caption: '', // Will update immediately after
+                status: 'draft',
+                ab_version: abVersion
+            });
+
+            // Generate unique redirect link for this specific post
+            const redirectLink = `${process.env.FRONTEND_URL}/r/${draft.id}`;
+            const finalizedCaption = captionTemplate.replace('{{LINK}}', redirectLink);
+
+            // Update draft with injected link
+            return await postModel.update(draft.id, { caption: finalizedCaption, ab_version: abVersion });
+        };
+
+        // 3. Create three unique posts for A/B testing
+        const postA = await createPostWithLink(captions.A, 'A');
+        const postB = await createPostWithLink(captions.B, 'B');
+        const postC = await createPostWithLink(captions.C, 'C');
+
+        return [postA, postB, postC];
     }
 
     async publishPost(postId) {

@@ -20,10 +20,11 @@ class PostModel {
                 .input('page_id', postData.page_id || null)
                 .input('caption', postData.caption || '')
                 .input('status', postData.status || 'draft')
+                .input('ab_version', postData.ab_version || null)
                 .query(`
-                    INSERT INTO posts (product_id, page_id, caption, status)
+                    INSERT INTO posts (product_id, page_id, caption, status, ab_version)
                     OUTPUT INSERTED.*
-                    VALUES (@product_id, @page_id, @caption, @status)
+                    VALUES (@product_id, @page_id, @caption, @status, @ab_version)
                 `);
             return result.recordset[0];
         } catch (error) {
@@ -68,6 +69,10 @@ class PostModel {
             if (updateData.caption) {
                 updates.push('caption = @caption');
                 request.input('caption', updateData.caption);
+            }
+            if (updateData.ab_version) {
+                updates.push('ab_version = @ab_version');
+                request.input('ab_version', updateData.ab_version);
             }
 
             if (updates.length === 0) return null;

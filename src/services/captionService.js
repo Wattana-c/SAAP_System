@@ -14,62 +14,79 @@ class CaptionService {
     }
 
     /**
-     * Generates a highly persuasive Thai selling caption.
-     * Uses OpenAI LLM. Falls back to template if API fails or key is missing.
+     * Generates 3 highly persuasive Thai selling caption variations (A/B testing).
+     * Uses OpenAI LLM in JSON mode. Falls back to template if API fails or key is missing.
      *
      * @param {string} title
      * @param {number} minPrice
      * @param {number} maxPrice
      * @param {string} link The redirect tracking link
-     * @returns {Promise<string>} The generated Thai caption
+     * @param {string} additionalGuidelines Optional optimized guidelines learned from past posts
+     * @returns {Promise<{A: string, B: string, C: string}>} The generated Thai captions
      */
-    async generateCaption(title, minPrice, maxPrice, link) {
+    async generateCaption(title, minPrice, maxPrice, additionalGuidelines = "") {
         // Format price string gracefully
         let priceStr = `${minPrice}`;
         if (minPrice !== maxPrice) {
             priceStr = `${minPrice} - ${maxPrice}`;
         }
 
-        // Only try LLM if a real key is present
         if (this.openai && process.env.OPENAI_API_KEY && process.env.OPENAI_API_KEY !== 'dummy_key') {
             try {
-                const prompt = `Write a highly persuasive Thai social media post for an affiliate product.
+                const prompt = `Write 3 different highly persuasive Thai social media posts for an affiliate product.
 Title: "${title}"
 Price: ${priceStr} THB
-Link: ${link}
 
-Requirements:
-- Identify the product category and explicitly address the target customer's pain point.
-- Give a specific, relatable use case.
-- Use emotional triggers (e.g. FOMO, excitement).
+Variations:
+Version A: Emotional & FOMO (Fear Of Missing Out) - High urgency, excitement.
+Version B: Logical & Benefit-driven - Focus on the pain point solved and quality.
+Version C: Short & Direct - Quick, punchy, UGC (User Generated Content) style review.
+
+Requirements for all:
 - Include appropriate emojis.
-- End with a strong Call-To-Action pointing to the Link.
-- Keep it concise, engaging, and in a friendly UGC (User Generated Content) tone.
-- Do not use hashtags.`;
+- End with a strong Call-To-Action pointing to the exact string "{{LINK}}". Do not invent a URL, just print "{{LINK}}".
+- Do not use hashtags.
+${additionalGuidelines ? '- EXTRA GUIDELINES FROM PAST PERFORMANCE:\n' + additionalGuidelines : ''}
+
+Output strictly as JSON in the following format:
+{
+  "A": "caption A text...",
+  "B": "caption B text...",
+  "C": "caption C text..."
+}`;
 
                 const completion = await this.openai.chat.completions.create({
                     messages: [{ role: "user", content: prompt }],
                     model: "gpt-3.5-turbo",
-                    max_tokens: 250,
-                    temperature: 0.7,
+                    response_format: { type: "json_object" },
+                    max_tokens: 800,
+                    temperature: 0.8,
                 });
 
                 if (completion.choices && completion.choices.length > 0) {
-                    return completion.choices[0].message.content.trim();
+                    const parsed = JSON.parse(completion.choices[0].message.content.trim());
+                    if (parsed.A && parsed.B && parsed.C) {
+                        return parsed;
+                    }
                 }
             } catch (error) {
                 console.error('[CaptionService] OpenAI generation failed, using fallback.', error.message);
             }
         }
 
-        // Fallback Template (Rule-based UGC logic)
-        return this.generateFallbackCaption(title, priceStr, link);
+        // Fallback: Generate one and assign it to A, B, and C with slight manual variations
+        const baseCaption = this.generateFallbackCaption(title, priceStr);
+        return {
+            A: `🔥 [แบบกระตุ้นด่วน]\n` + baseCaption,
+            B: `💡 [แบบเน้นเหตุผล]\n` + baseCaption,
+            C: `✨ [แบบรีวิวจริง]\n` + baseCaption
+        };
     }
 
     /**
-     * Generates a template-based fallback caption.
+     * Generates a template-based fallback caption with {{LINK}} placeholder.
      */
-    generateFallbackCaption(title, priceStr, link) {
+    generateFallbackCaption(title, priceStr) {
 
         // Randomize Hooks to keep it fresh and sound like UGC (User Generated Content)
         const hooks = [
@@ -124,7 +141,7 @@ ${benefit2}
 
 ${urgency}
 🛒 พิกัดจิ้มตรงนี้เลยยยย 👇👇
-${link}
+{{LINK}}
 `;
 
         return caption.trim();
