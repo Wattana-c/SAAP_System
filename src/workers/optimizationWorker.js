@@ -1,6 +1,8 @@
 const captionOptimizerService = require('../services/captionOptimizerService');
 const productScoringService = require('../services/productScoringService');
 const trafficService = require('../services/trafficService');
+const appConfig = require('../configs/appConfig');
+const logger = require('../services/loggerService');
 
 class OptimizationWorker {
     constructor() {
@@ -27,8 +29,12 @@ class OptimizationWorker {
     }
 
     async runOptimizations() {
+        if (!appConfig.get('ENABLE_AUTOMATION')) {
+            return;
+        }
+
         try {
-            console.log(`[OptimizationWorker] Running optimization cycles...`);
+            logger.info('OptimizationWorker', `Running optimization cycles...`);
 
             // 1. Optimize Captions (Learn from A/B variants and CTR)
             await captionOptimizerService.updateGuidelines();
@@ -37,11 +43,13 @@ class OptimizationWorker {
             await productScoringService.updateAllScores();
 
             // 3. Distribution & Traffic Strategy (Repost top 10% winners to rotated pages)
-            await trafficService.processTopProductLoop();
+            if (appConfig.get('ENABLE_TOP_PRODUCT_LOOP')) {
+                await trafficService.processTopProductLoop();
+            }
 
-            console.log(`[OptimizationWorker] Optimization cycles completed.`);
+            logger.info('OptimizationWorker', `Optimization cycles completed.`);
         } catch (error) {
-            console.error(`[OptimizationWorker] Error during optimization: ${error.message}`);
+            logger.error('OptimizationWorker', `Error during optimization: ${error.message}`);
         }
     }
 }

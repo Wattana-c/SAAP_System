@@ -5,8 +5,12 @@ const rateLimit = require('express-rate-limit');
 const logger = require('./middlewares/logger');
 const errorHandler = require('./middlewares/errorHandler');
 const routes = require('./routes');
+const path = require('path');
 
 const app = express();
+
+// Serve static admin files
+app.use(express.static(path.join(__dirname, 'public')));
 
 // Security Middlewares
 app.use(helmet()); // Secure HTTP headers

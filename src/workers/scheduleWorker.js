@@ -1,5 +1,7 @@
 const scheduleModel = require('../models/scheduleModel');
 const postService = require('../services/postService');
+const appConfig = require('../configs/appConfig');
+const logger = require('../services/loggerService');
 
 class ScheduleWorker {
     constructor() {
@@ -29,9 +31,13 @@ class ScheduleWorker {
             return;
         }
 
+        if (!appConfig.get('ENABLE_AUTOMATION')) {
+            return;
+        }
+
         this.isRunning = true;
         try {
-            console.log(`[ScheduleWorker] Checking for pending schedules...`);
+            logger.info('ScheduleWorker', `Checking for pending schedules...`);
 
             // Atomically fetch and lock schedules to prevent double posting
             const pendingSchedules = await scheduleModel.getAndLockPendingSchedules();
@@ -46,21 +52,24 @@ class ScheduleWorker {
 
             for (const schedule of pendingSchedules) {
                 try {
-                    console.log(`[ScheduleWorker] Publishing post ID: ${schedule.post_id}`);
+                    logger.info('ScheduleWorker', `Publishing post ID: ${schedule.post_id}`);
                     await postService.publishPost(schedule.post_id);
 
                     // Mark as completed
                     await scheduleModel.updateStatus(schedule.id, 'completed');
-                    console.log(`[ScheduleWorker] Successfully published and updated schedule ID: ${schedule.id}`);
+                    logger.info('ScheduleWorker', `Successfully published and updated schedule ID: ${schedule.id}`);
                 } catch (error) {
-                    console.error(`[ScheduleWorker] Failed to publish post ID ${schedule.post_id}. Error: ${error.message}`);
+                    logger.error('ScheduleWorker', `Failed to publish post ID ${schedule.post_id}. Error: ${error.message}`);
+                    // Report to monitor for safe mode tracking
+                    const monitorService = require('../services/monitorService');
+                    monitorService.reportError();
                     // Mark schedule as failed
                     await scheduleModel.updateStatus(schedule.id, 'failed');
                 }
             }
 
         } catch (error) {
-            console.error(`[ScheduleWorker] Critical Error during processing: ${error.message}`);
+            logger.error('ScheduleWorker', `Critical Error during processing: ${error.message}`);
         } finally {
             this.isRunning = false;
         }
