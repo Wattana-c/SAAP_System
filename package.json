@@ -4,6 +4,8 @@
   "description": "Shopee Affiliate Auto Post System",
   "main": "index.js",
   "scripts": {
+    "start": "node src/server.js",
+    "setup": "node setup/init.js",
     "test": "jest --setupFilesAfterEnv ./tests/setup.js"
   },
   "repository": {

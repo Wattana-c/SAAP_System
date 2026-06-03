@@ -32,6 +32,22 @@ class PostModel {
         }
     }
 
+    async getDailyStats() {
+        try {
+            const pool = await poolPromise;
+            const result = await pool.request().query(`
+                SELECT
+                    COUNT(CASE WHEN status = 'posted' THEN 1 END) as total_posted_today,
+                    COUNT(CASE WHEN status = 'failed' THEN 1 END) as total_failed_today
+                FROM posts
+                WHERE CAST(created_at AS DATE) = CAST(GETDATE() AS DATE)
+            `);
+            return result.recordset[0];
+        } catch (error) {
+            throw new AppError(`Database Error fetching daily stats: ${error.message}`, 500);
+        }
+    }
+
     async findByIdWithProduct(id) {
         try {
             const pool = await poolPromise;

@@ -2,6 +2,7 @@ const express = require('express');
 const productRoutes = require('./productRoutes');
 const postRoutes = require('./postRoutes');
 const scheduleRoutes = require('./scheduleRoutes');
+const adminRoutes = require('./adminRoutes');
 const redirectController = require('../controllers/redirectController');
 const dashboardController = require('../controllers/dashboardController');
 
@@ -10,8 +11,9 @@ const router = express.Router();
 // Redirect Tracking Route (often placed at top level /r/:postId, but using /api/r/ for structure here)
 router.get('/r/:postId', redirectController.handleRedirect);
 
-// Dashboard Route
-router.get('/dashboard/top-posts', dashboardController.getTopPosts);
+// Dashboard & Admin Routes
+router.get('/dashboard', dashboardController.getDashboardStats);
+router.use('/admin', adminRoutes);
 
 // Standard Resource Routes
 router.use('/products', productRoutes);

@@ -1,33 +1,92 @@
-# Affiliate Auto Post System
+# Affiliate Auto Post System 🚀
 
-A backend system for an Affiliate Auto Posting platform built with Node.js (Express), MSSQL, and following Clean Architecture principles.
+ระบบคุมการทำงานหลังบ้านระดับ Production สำหรับ **Affiliate Auto Posting** เพื่อช่วยคุณสร้างรายได้แบบอัตโนมัติ
+ระบบนี้ครอบคลุมตั้งแต่การ **Scraping ข้อมูล**, **Gen Caption ด้วย AI**, **การทำ A/B Testing**, **การสลับเพจโพสต์ (Page Rotation)** ไปจนถึง **การวนซ้ำสินค้าขายดี (Top Product Loop)** แบบอัตโนมัติ
 
-## Prerequisites
+---
 
-- Node.js (v18 or higher recommended)
-- MSSQL Server
+## 📌 1. มีไว้ทำอะไร (System Overview)
 
-## Setup Instructions
+ระบบนี้คือ "เครื่องจักรผลิตเงินอัตโนมัติ" ที่จะช่วยลดเวลาการทำงานของคุณลง 90%
+หลักการทำงาน (Pipeline) ของระบบ:
 
-1. **Install Dependencies**
-   Run the following command to install the necessary packages:
-   \`\`\`bash
-   npm install
-   \`\`\`
+1. **Scraping (ดึงข้อมูล)**: ทันทีที่คุณโยนลิงก์สินค้า (เช่น Shopee) เข้ามา ระบบจะทำการดึงชื่อ รูปภาพ และช่วงราคา (Min-Max) อัตโนมัติ พร้อมตัด Parameter ขยะทิ้งเพื่อป้องกันโพสต์ซ้ำซ้อน
+2. **AI Caption & A/B Testing**: ระบบใช้ **OpenAI** วิเคราะห์หา Pain Point จากชื่อสินค้า และเขียนแคปชัน 3 รูปแบบ (เน้นอารมณ์, เน้นเหตุผล, หรือรีวิวสั้นๆ)
+3. **Queue & Auto Schedule**: ระบบจะส่งแคปชันทั้ง 3 แบบไปตั้งเวลาโพสต์ลง Facebook (กระจายช่วงเวลา 15 - 120 นาที) โดยสลับเพจแบบ **Least Recently Used (LRU)** เพื่อหลีกเลี่ยงการโดนแบนจากอัลกอริทึม
+4. **Click Tracking & Dashboard**: ทุกโพสต์จะถูกแปลงเป็น Redirect Link (`/r/:id`) เพื่อตรวจจับยอดคลิก และแสดงผล CTR ในหน้า Admin UI
+5. **Top Product Loop (ทีเด็ด 💡)**: สินค้าไหนที่ได้ยอดคลิกเยอะ (Top 10%) ระบบจะดึงกลับมาวนเขียนแคปชันใหม่ และตั้งเวลาโพสต์ซ้ำ (24 - 72 ชม. ถัดไป) อัตโนมัติ!
 
-2. **Configuration**
-   Copy the \`.env.example\` file to \`.env\` and update the variables with your database credentials:
-   \`\`\`bash
-   cp .env.example .env
-   \`\`\`
+---
 
-3. **Run the Application**
-   You can start the server using Node:
-   \`\`\`bash
-   node src/server.js
-   \`\`\`
-   The server will start (defaulting to port 3000) and automatically connect to MSSQL and initialize the necessary tables (`products`, `posts`, and `schedules`) if they do not already exist.
+## ⚙️ 2. เริ่มยังไง (Installation & Auto Setup)
 
-## API Endpoints
+### ขั้นตอนที่ 1: ติดตั้งโปรแกรมและเตรียมฐานข้อมูล
+ตรวจสอบให้แน่ใจว่าเครื่องของคุณมี **Node.js (v18+)** และ **MSSQL Server**
 
-- \`GET /api/products\`: Fetch all products.
+คัดลอกไฟล์ตั้งค่าระบบ:
+\`\`\`bash
+cp .env.example .env
+\`\`\`
+เข้าไปแก้ข้อมูลในไฟล์ \`.env\`:
+- \`DB_... \` : รหัสผ่าน SQL Server
+- \`FRONTEND_URL\` : โดเมนของคุณ (เช่น \`http://localhost:3000\`)
+- \`OPENAI_API_KEY\` : คีย์ API ของ OpenAI
+- \`FB_PAGE_ID\` & \`FB_PAGE_ACCESS_TOKEN\` : ข้อมูลเพจ Facebook เริ่มต้น
+
+### ขั้นตอนที่ 2: ติดตั้งและตรวจเช็คระบบ
+รันคำสั่งต่อไปนี้เพื่อโหลดแพ็กเกจ และตรวจเช็คการเชื่อมต่อ (Database & Facebook API):
+\`\`\`bash
+npm install
+npm run setup
+\`\`\`
+*(หากเชื่อมต่อสำเร็จ ระบบจะขึ้นเครื่องหมาย ✅)*
+
+### ขั้นตอนที่ 3: เปิดเซิร์ฟเวอร์
+\`\`\`bash
+node src/server.js
+\`\`\`
+ระบบจะรันที่พอร์ต 3000 โดยค่าเริ่มต้น
+
+---
+
+## 📖 3. ใช้งานยังไง (Step-by-step Usage)
+
+### 3.1 การเข้าสู่ระบบจัดการ (Admin UI)
+เปิดเบราว์เซอร์ไปที่: 👉 \`http://localhost:3000/admin.html\`
+นี่คือแผงควบคุมหลักที่คุณใช้ตรวจสอบและสั่งการระบบ
+
+### 3.2 การเพิ่มสินค้า (Manual Trigger)
+1. ในช่อง **Manual Trigger** (หน้า Admin UI)
+2. วางลิงก์ Affiliate ของ Shopee
+3. กดปุ่ม **"Add to Queue"**
+4. ระบบจะตอบรับทันที (202 Accepted) และนำลิงก์ไปเข้าคิวทำงานเบื้องหลัง คุณไม่ต้องรอให้หน้าเว็บโหลดนาน
+
+### 3.3 การทำงานของ Automation
+- ระบบ **Queue Worker** จะทำงานแบบ Asynchronous ช่วยดึงข้อมูลและ Gen แคปชันให้เสร็จ
+- ระบบ **Schedule Worker** จะรันทุกๆ 5 นาทีเพื่อคอยดึงคิวโพสต์ที่ถึงเวลา (Scheduled Time) ยิงตรงเข้าสู่ Facebook Graph API ทันที
+- คุณสามารถเปิด/ปิดการทำงานทั้งหมดนี้ได้ผ่านปุ่ม **"Toggle Power"** มุมขวาบน
+
+---
+
+## 🔄 4. การตรวจสอบและดูแลระบบประจำวัน (Daily Operation Guide)
+
+**สิ่งที่คุณต้องเช็คทุกวันผ่าน Admin UI:**
+1. **Posts Today & Failed Posts**: ดูว่าวันนี้โพสต์ออกไปเท่าไหร่ หาก Failed เยอะผิดปกติ ให้เช็ค System Logs ทันที
+2. **System Logs**: ตรวจสอบว่ามี Error จาก Facebook (Token หมดอายุ) หรือ OpenAI (เครดิตหมด) หรือไม่
+3. **Top Performing Products**: เช็คว่าสินค้าไหนมี Score/CTR สูง คุณสามารถหากลุ่มสินค้าแนวๆ เดียวกันมาป้อนใส่ระบบเพิ่มได้เลย
+
+---
+
+## 🛠 5. การแก้ไขปัญหาเบื้องต้น (Troubleshooting)
+
+- **Scraper ล้มเหลว (Failed to Scrape)**:
+  - *สาเหตุ*: โดน Shopee ขึ้น Anti-Bot หรือ Captcha
+  - *วิธีแก้*: ปล่อยไว้ ระบบจะพยายาม Retry อัตโนมัติ (พร้อม Exponential Backoff) หากไม่สำเร็จ ระบบจะข้ามไปคิวต่อไป
+- **Facebook โพสต์ไม่ขึ้น (Failed to Publish)**:
+  - *สาเหตุ*: Access Token เพจหมดอายุ หรือโดนบล็อกการโพสต์
+  - *วิธีแก้*: เข้าไปเช็คตาราง \`pages\` ใน DB หรือเช็คไฟล์ \`.env\` อัปเดต Token ให้เรียบร้อย
+- **ไม่มีการคลิกลิงก์ (No Clicks/Zero CTR)**:
+  - *วิธีแก้*: ไม่ต้องกังวล! ระบบมีการทำ A/B Testing (แคปชันอารมณ์, เหตุผล, รีวิว) ให้รอ 1-2 วัน ระบบ **Optimization Worker** จะวิเคราะห์แคปชันที่คนคลิกเยอะที่สุด และอัปเดต Prompt เป็นมาตรฐานใหม่ให้เอง
+- **ระบบหยุดทำงาน (Safe Mode Active ⚠️)**:
+  - *สาเหตุ*: พบ Error ต่อเนื่องเกินขีดจำกัด (เช่น เกิน 5 ครั้ง) ระบบจึงชัตดาวน์ตัวเองอัตโนมัติเพื่อป้องกันโดนแบน IP
+  - *วิธีแก้*: ตรวจสอบ Log และแก้ปัญหาต้นทาง จากนั้นกดปุ่ม "Toggle Power" ในหน้า Admin เพื่อให้รันต่อ
